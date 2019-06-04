@@ -1,0 +1,70 @@
+apiVersion: 2018-06-01
+location: northeurope
+name: <<container_group>>
+properties:
+  containers:
+
+  - name: influxdb
+    properties:
+      image: influxdb:latest
+      resources:
+        requests:
+          cpu: 1
+          memoryInGb: 1.5
+      ports:
+      - port: 8083
+      - port: 8086
+      volumeMounts:
+      - name: vol-influx
+        mountPath: /var/lib/influxdb
+
+  - name: kronograf
+    properties:
+      image: chronograf:latest
+      resources:
+        requests:
+          cpu: 1
+          memoryInGb: 1.5
+      ports:
+      - port: 8888
+      volumeMounts:
+      - name: vol-chrono
+        mountPath: /var/lib/chronograf
+
+  - name: iot2influx
+    properties:
+      image: tipith/iothub2influxdb
+      resources:
+        requests:
+          cpu: 1
+          memoryInGb: 1.5
+      volumeMounts:
+      - name: vol-conf
+        mountPath: /opt/iot/conf
+
+  osType: Linux
+  ipAddress:
+    type: Public
+    ports:
+    - protocol: tcp
+      port: '8888'
+
+  volumes:
+    - name: vol-influx
+      azureFile:
+        shareName: <<influx_share>>
+        storageAccountName: <<storage_account>>
+        storageAccountKey: <<storage_key>>
+    - name: vol-chrono
+      azureFile:
+        shareName: <<chrono_share>>
+        storageAccountName: <<storage_account>>
+        storageAccountKey: <<storage_key>>
+    - name: vol-conf
+      azureFile:
+        shareName: <<common_share>>
+        storageAccountName: <<storage_account>>
+        storageAccountKey: <<storage_key>>
+
+tags: null
+type: Microsoft.ContainerInstance/containerGroups
