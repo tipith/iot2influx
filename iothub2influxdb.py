@@ -29,16 +29,15 @@ def run():
     logger.info('starting')
     iot_conf, influx_conf = get_config('conf/config.ini')
     influxdb = InfluxAdapter(influx_conf['HOSTNAME'], influx_conf['PORT'], influx_conf['USER'], influx_conf['PASSWORD'], influx_conf['DATABASE'])
-    client = EventHubClient.from_iothub_connection_string(iot_conf['IOTHUB_CONNSTR'], debug=True)
+    client = EventHubClient.from_iothub_connection_string(iot_conf['IOTHUB_CONNSTR'], debug=False)
 
-    info = {'partition_count': 2, 'partition_id': ['0']}
-    receivers = []
-    for pid in info['partition_id']:
-        receivers.append(client.add_receiver("$default", '1', offset=Offset("@latest"), operation='/messages/events'))
+    partitions = iot_conf.getint('PARTITION_COUNT')
+    new_receiver = lambda x: client.add_receiver("$default", str(x), offset=Offset("@latest"), operation='/messages/events')
+    receivers = [new_receiver(pid) for pid in range(partitions)]
 
     try:
         client.run()
-        p = multiprocessing.dummy.Pool(info['partition_count'])
+        p = multiprocessing.dummy.Pool(partitions)
         receiverfunc = functools.partial(receivefunc, influxdb=influxdb)
         p.map(receiverfunc, receivers)
     except KeyboardInterrupt:
@@ -48,5 +47,5 @@ def run():
         client.stop()
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.INFO)
     run()

@@ -27,7 +27,7 @@ class InfluxAdapter:
     def _write(self, payload):
         while True:
             try:
-                logger.warn(payload)
+                logger.info(payload)
                 self.influx.write_points(payload)
             except Exception:
                 logger.exception("Error writing to InfluxDB. Retrying in 30sec")
